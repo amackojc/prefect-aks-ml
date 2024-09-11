@@ -5,8 +5,6 @@ import tensorflow as tf
 import numpy as np
 
 from prefect import task, flow, tags
-# from matplotlib import pyplot as plt
-# from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from imblearn.datasets import make_imbalance
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, confusion_matrix
 from sklearn.preprocessing import LabelEncoder
@@ -27,7 +25,7 @@ def load_data(data_path, image_size):
             labels.append(class_name)
 
     encoder_labels = LabelEncoder()
-    data = np.array(data)
+    data = np.array(data) / 255  # normalization
     labels = encoder_labels.fit_transform(np.array(labels))
     return data, labels
 
@@ -36,7 +34,7 @@ def load_data(data_path, image_size):
 def make_data_imbalanced(X_data, y_data, image_size):
     X_data_imbalanced, y_data_imbalanced = make_imbalance(
         X_data.reshape(X_data.shape[0], 3 * image_size**2),
-        y_data, sampling_strategy={0: 100, 1: 3500},
+        y_data, sampling_strategy={0: 350, 1: 3500},
         random_state=42
     )
     X_data_imbalanced = X_data_imbalanced.reshape(
@@ -76,7 +74,7 @@ def create_cnn_model(image_size):
 def train_model(X_train, y_train, X_val, y_val, model, batch_size, epochs):
 
     mlflow.set_tracking_uri(uri="http://mlflow.mlflow.svc.cluster.local:5000")
-    mlflow.set_experiment("Pneumonia Imbalanced Data")
+    mlflow.set_experiment("Pneumonia Imbalanced Data - Standard")
     mlflow.tensorflow.autolog()
 
     with mlflow.start_run():
@@ -131,7 +129,7 @@ def predict_model(X_test, y_test, model):
 
 
 @flow(log_prints=True)
-def ml_pipeline():
+def imbalanced_pipeline():
     image_size = 128
     X_train, y_train = load_data("data/train", image_size)
     X_val, y_val = load_data("data/val", image_size)
@@ -145,4 +143,4 @@ def ml_pipeline():
 
 if __name__ == "__main__":
     with tags("local"):
-        ml_pipeline()
+        imbalanced_pipeline()
