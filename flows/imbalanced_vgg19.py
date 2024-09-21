@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from collections import Counter
-from imblearn.over_sampling import ADASYN
 from prefect import task, flow, tags
 from imblearn.datasets import make_imbalance
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, classification_report, confusion_matrix, roc_curve, precision_recall_curve, auc
@@ -66,24 +65,6 @@ def make_data_imbalanced(X_data, y_data, samples_ratio, image_size):
     )
 
     return X_data_imbalanced, y_data_imbalanced
-
-
-@task(log_prints=False)
-def adasyn_oversampling(X_train, y_train, image_size):
-    ada = ADASYN(random_state=42)
-    X_train_adasyn, y_train_adasyn = ada.fit_resample(
-            X_train.reshape(X_train.shape[0], 3 * image_size**2),
-            y_train
-    )
-
-    X_train_adasyn = X_train_adasyn.reshape(
-            X_train_adasyn.shape[0],
-            image_size,
-            image_size,
-            3
-    )
-
-    return X_train_adasyn, y_train_adasyn
 
 
 @task(log_prints=True)
@@ -175,17 +156,17 @@ def predict_model(X_test, y_test, model):
 
 
 @flow(log_prints=True)
-def imbalanced_vgg19_adasyn_pipeline():
+def imbalanced_vgg19_pipeline():
     image_size = 256
 
     mlflow.set_tracking_uri(uri="http://mlflow.mlflow.svc.cluster.local:5000")
-    mlflow.set_experiment("Pneumonia Balance Data - VGG19 Imbalanced ADASYN")
+    mlflow.set_experiment("Pneumonia Balance Data - VGG19 Imbalanced")
     mlflow.tensorflow.autolog()
 
     X_data, y_data = load_data("data", image_size)
 
-    print(f'Before imbalancing: {Counter(y_data)}')
     X_data_imbalanced, y_data_imbalanced = make_data_imbalanced(X_data, y_data, 1/9, image_size)
+    print(f'Before imbalancing: {Counter(y_data)}')
 
     X_train, X_val, y_train, y_val = train_test_split(
             X_data_imbalanced,
@@ -205,15 +186,13 @@ def imbalanced_vgg19_adasyn_pipeline():
     X_test = X_test / 255
 
     print(f'After imbalancing: {Counter(y_train)}')
-    X_train_adasyn, y_train_adasyn = adasyn_oversampling(X_train, y_train, image_size)
-    print(f'After ADASYN: {Counter(y_train_adasyn)}')
 
     with mlflow.start_run():
         model_design_cnn = create_vgg19_model(image_size)
-        model_trained = train_model(X_train_adasyn, y_train_adasyn, X_val, y_val, model_design_cnn, 32, 5)
+        model_trained = train_model(X_train, y_train, X_val, y_val, model_design_cnn, 32, 5)
         predict_model(X_test, y_test, model_trained)
 
 
 if __name__ == "__main__":
     with tags("local"):
-        imbalanced_vgg19_adasyn_pipeline()
+        imbalanced_vgg19_pipeline()
