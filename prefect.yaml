@@ -1,18 +1,15 @@
-# Generic metadata about this project
 name: flows
 prefect-version: 3.0.0
 
-# build section allows you to manage and build docker images
 build:
 - prefect_docker.deployments.steps.build_docker_image:
     id: build-image
     requires: prefect-docker>=0.4.0
     image_name: "prefect17245984157znv.azurecr.io/prefect-gpu"
-    tag: v0.1.4
+    tag: v0.1.45
     dockerfile: Dockerfile
     platform: "linux/amd64"
 
-# push section allows you to manage if and how this project is uploaded to remote locations
 push:
 - prefect_docker.deployments.steps.push_docker_image:
     requires: prefect-docker>=0.4.0
@@ -22,13 +19,14 @@ push:
 pull:
 - prefect.deployments.steps.set_working_directory:
     directory: /opt/prefect/prefect-aks/workflows
-# the definitions section allows you to define reusable components for your deployments
 definitions:
   tags: &common_tags
     - "aks"
   work_pool: &common_work_pool
     name: "aks-prefect"
     job_variables:
+      env:
+        AZURE_STORAGE_ACCESS_KEY: "{{ $AZURE_STORAGE_ACCESS_KEY }}"
       labels:
         app: prefect-ml
       image: "{{ build-image.image }}"
@@ -60,8 +58,13 @@ definitions:
                 - prefect-ml
             topologyKey: "kubernetes.io/hostname"
 
-# the deployments section allows you to provide configuration for deploying flows
 deployments:
+- name: "balanced"
+  tags: *common_tags
+  entrypoint: "flows/balanced.py:balanced_pipeline"
+  work_pool: *common_work_pool
+  schedules: null
+
 - name: "balanced_vgg19"
   tags: *common_tags
   entrypoint: "flows/balanced_vgg19.py:balanced_vgg19_pipeline"
@@ -72,69 +75,46 @@ deployments:
   tags: *common_tags
   entrypoint: "flows/imbalanced.py:imbalanced_pipeline"
   work_pool: *common_work_pool
-  schedules:
-    - cron: "0 20 */3 * *"
-      timezone: "Europe/Warsaw"
-      active: true
-- name: "imbalanced"
-  tags: *common_tags
-  entrypoint: "flows/imbalanced.py:imbalanced_pipeline"
-  work_pool: *common_work_pool
-  schedules:
-    - cron: "0 20 */3 * *"
-      timezone: "Europe/Warsaw"
-      active: true
+  schedules: null
 
 - name: "imbalanced_smote"
   tags: *common_tags
   entrypoint: "flows/imbalanced_smote.py:imbalanced_smote_pipeline"
   work_pool: *common_work_pool
-  schedules:
-    - cron: "5 20 */3 * *"
-      timezone: "Europe/Warsaw"
-      active: true
-
-- name: "imbalanced_vgg19_smote"
-  tags: *common_tags
-  entrypoint: "flows/imbalanced_vgg19_smote.py:imbalanced_vgg19_smote_pipeline"
-  work_pool: *common_work_pool
-  schedules:
-    - cron: "10 20 */3 * *"
-      timezone: "Europe/Warsaw"
-      active: true
+  schedules: null
 
 - name: "imbalanced_adasyn"
   tags: *common_tags
   entrypoint: "flows/imbalanced_adasyn.py:imbalanced_adasyn_pipeline"
   work_pool: *common_work_pool
-  schedules:
-    - cron: "15 20 */3 * *"
-      timezone: "Europe/Warsaw"
-      active: true
-
-- name: "imbalanced_vgg19_adasyn"
-  tags: *common_tags
-  entrypoint: "flows/imbalanced_vgg19_adasyn.py:imbalanced_vgg19_adasyn_pipeline"
-  work_pool: *common_work_pool
-  schedules:
-    - cron: "20 20 */3 * *"
-      timezone: "Europe/Warsaw"
-      active: true
+  schedules: null
 
 - name: "imbalanced_smotetomek"
   tags: *common_tags
   entrypoint: "flows/imbalanced_smotetomek.py:imbalanced_smotetomek_pipeline"
   work_pool: *common_work_pool
-  schedules:
-    - cron: "25 20 */3 * *"
-      timezone: "Europe/Warsaw"
-      active: true
+  schedules: null
+
+- name: "imbalanced_vgg19"
+  tags: *common_tags
+  entrypoint: "flows/imbalanced_vgg19.py:imbalanced_vgg19_pipeline"
+  work_pool: *common_work_pool
+  schedules: null
+
+- name: "imbalanced_vgg19_smote"
+  tags: *common_tags
+  entrypoint: "flows/imbalanced_vgg19_smote.py:imbalanced_vgg19_smote_pipeline"
+  work_pool: *common_work_pool
+  schedules: null
+
+- name: "imbalanced_vgg19_adasyn"
+  tags: *common_tags
+  entrypoint: "flows/imbalanced_vgg19_adasyn.py:imbalanced_vgg19_adasyn_pipeline"
+  work_pool: *common_work_pool
+  schedules: null
 
 - name: "imbalanced_vgg19_smotetomek"
   tags: *common_tags
   entrypoint: "flows/imbalanced_vgg19_smotetomek.py:imbalanced_vgg19_smotetomek_pipeline"
   work_pool: *common_work_pool
-  schedules:
-    - cron: "30 20 */3 * *"
-      timezone: "Europe/Warsaw"
-      active: true
+  schedules: null
