@@ -2,7 +2,7 @@ FROM tensorflow/tensorflow:2.17.0-gpu
 
 ENV WORKDIR=/opt/prefect/prefect-aks/workflows
 
-COPY data "$WORKDIR/data"
+COPY data1 "$WORKDIR/data"
 COPY requirements.txt "$WORKDIR/requirements.txt"
 
 WORKDIR $WORKDIR
@@ -12,4 +12,4 @@ ENV PATH="$WORKDIR/venv/bin:$PATH"
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-LABEL io.prefect.version=3.0.0
+LABEL io.prefect.version=3.0.3
