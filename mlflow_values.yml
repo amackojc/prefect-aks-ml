@@ -1,0 +1,16 @@
+tolerations:
+  - key: "kubernetes.azure.com/scalesetpriority"
+    operator: "Equal"
+    value: "spot"
+    effect: "NoSchedule"
+  - key: "sku"
+    operator: "Equal"
+    value: "standard"
+    effect: "NoSchedule"
+
+artifactRoot:
+  azureBlob:
+    enabled: true
+    container: "mlflow"
+    storageAccount: "mlflowprefect1"
+    accessKey: $AZURE_STORAGE_ACCESS_KEY" # envsubst
