@@ -1,3 +1,5 @@
 *pycache*
 *data*
 *.json
+*.terraform*
+*terraform.tfstate*
