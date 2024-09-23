@@ -1,0 +1,38 @@
+worker:
+  cloudApiConfig:
+    accountId: $PREFECT_ACCOUNT_ID # envsubst
+    workspaceId: $PREFECT_WORKSPACE_ID # envsubst
+  config:
+    workPool: aks-prefect
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: "environment"
+            operator: "In"
+            values:
+            - "prefect"
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        preference:
+          matchExpressions:
+          - key: "kubernetes.azure.com/scalesetpriority"
+            operator: "In"
+            values:
+            - "spot"
+
+  tolerations:
+    - key: "kubernetes.azure.com/scalesetpriority"
+      operator: "Equal"
+      value: "spot"
+      effect: "NoSchedule"
+    - key: "sku"
+      operator: "Equal"
+      value: "standard"
+      effect: "NoSchedule"
