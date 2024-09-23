@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: aim
+  name: aim
+  namespace: aim
+spec:
+  selector:
+    matchLabels:
+      app: aim
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: aim
+    spec:
+      containers:
+      - image: amackojc/aim-image:0.2.0
+        name: aim
+        ports:
+          - containerPort: 53800
+            protocol: TCP
+        resources:
+          limits:
+            cpu: "1"
+            memory: 2Gi
+          requests:
+            cpu: 100m
+            memory: 1Gi
+        volumeMounts:
+          - mountPath: "/mnt/azure/"
+            name: aim
+        env:
+          - name: AZURE_STORAGE_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: azure-storage-account
+                key: access-key
+      volumes:
+        - name: aim
+          persistentVolumeClaim:
+            claimName: aim-runs
+      tolerations:
+        - key: "kubernetes.azure.com/scalesetpriority"
+          operator: "Equal"
+          value: "spot"
+          effect: "NoSchedule"
+        - key: "sku"
+          operator: "Equal"
+          value: "standard"
+          effect: "NoSchedule"
